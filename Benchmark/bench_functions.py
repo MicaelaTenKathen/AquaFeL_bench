@@ -7,6 +7,7 @@ repository: https://github.com/FedePeralta/BO_drones/blob/master/bin/Utils/utils
 import random
 
 from deap import benchmarks
+from deap.benchmarks.tools import translate, rotate, scale
 from skopt.benchmarks import branin as brn
 
 from Environment.bounds import Bounds
@@ -15,6 +16,14 @@ from Environment.map import Map
 import matplotlib.image as img
 import numpy as np
 import matplotlib.pyplot as plt
+
+
+@translate([10, 10])
+@scale([0.98, 0.98])
+@rotate(np.linalg.qr(np.random.random((2, 2)))[0])
+def ackley_modified(sol):
+    return benchmarks.ackley(sol)
+
 
 
 class Benchmark_function():
@@ -39,7 +48,7 @@ class Benchmark_function():
         return
 
     def ackley_arg0(self, sol):
-        return np.nan if self.w_obstacles and sol[2] == 1 else benchmarks.ackley(sol[:2])[0]
+        return np.nan if self.w_obstacles and sol[2] == 1 else ackley_modified(sol[:2])[0]
 
     def bohachevsky_arg0(self, sol):
         return np.nan if self.w_obstacles and sol[2] == 1 else benchmarks.bohachevsky(sol[:2])[0]
@@ -132,6 +141,13 @@ class Benchmark_function():
             stepx, stepy = 60 / self.grid.shape[1], 60 / self.grid.shape[0]
             print(self.grid.shape)
             xmin, xmax, ymin, ymax = -30 + stepx / 2, 30, -30 + stepy / 2, 30
+            
+            ackley_modified.translate([0.0, 0.0])  # TODO reemplazar 0.0 0.0 por literalmente cualquier random
+            ackley_modified.scale(
+                [1, 2])  # TODO reemplazar cuidadosamente estos valores, tienen que ser cercanos a uno (hasta 5 funciona bien creo)
+            rot_matrix_quat, _ = np.linalg.qr(np.identity(2))
+            ackley_modified.rotate(rot_matrix_quat)  # TODO reemplazar por cualquier matriz de rotacion
+            
             bm_func = self.ackley_arg0
         elif self.base_benchmark == "bohachevsky":
             stepx, stepy = 30 / self.grid.shape[1], 30 / self.grid.shape[0]
