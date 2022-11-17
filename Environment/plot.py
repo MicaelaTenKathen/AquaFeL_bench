@@ -137,7 +137,7 @@ class Plots():
         extent = (0, self.xs, 0, self.ys)
         fig = plt.figure()
         ax1 = fig.add_subplot(111)
-        im4 = ax1.imshow(plot_bench.T, interpolation='bilinear', origin='lower', cmap=self.cmapmean)
+        im4 = ax1.imshow(plot_bench.T, interpolation='bilinear', origin='lower', cmap=self.cmapmean, vmin=0, vmax=1.0)
         contours = ax1.contour(plot_bench.T, levels, colors='k', origin='lower', extent=extent, alpha=0.5)
         plt.clabel(contours, inline=True, fontsize=6)
         plt.colorbar(im4, label='µ', shrink=1)

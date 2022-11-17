@@ -130,7 +130,7 @@ class DetectContaminationAreas():
         return dict_, dict_coord_, dict_impor_, j, center_peaks, dict_index_, action_zones, \
                dict_limits
 
-    def benmchark_areas(self):
+    def benchmark_areas(self):
         dict_coord_bench = {}
         dict_index_bench = {}
         dict_impor_bench = {}

@@ -107,14 +107,14 @@ for i in range(10):
     #plot.gaussian(mu, sigma, part_ant)
     #plot.movement_exploration(mu, sigma, part_ant_explore)
     #plot.movement_exploration(final_mu, final_sigma, part_ant)
-    #plot.benchmark()
-    plot.detection_areas(mu, sigma)
+    # plot.benchmark()
+    #plot.detection_areas(mu, sigma)
     #plot.mean_map(mu, sigma)
     #plot.mu_exploitation(dict_mu, dict_sigma, centers)
     #distances = pso.distances_data()
     #plot.movement_exploitation(vehicles, dict_mu, dict_sigma, centers, dict_centers, part_ant_exploit, assig_center)
-    plot.plot_classic(final_mu, final_sigma, part_ant)
-    plot.zoom_action_zone(centers_bench, dict_limits_bench, mu, sigma, final_mu, final_sigma)
+    # plot.plot_classic(final_mu, final_sigma, part_ant)
+    #plot.zoom_action_zone(centers_bench, dict_limits_bench, mu, sigma, final_mu, final_sigma)
     #print(centers_bench, dict_limits_bench, dict_coord)
 
     # if i == 0:
@@ -135,7 +135,7 @@ for i in range(10):
     # std_total = np.std(np.array(last_mse))
     # conf_total = std_total * 1.96
     print('GT:', i)
-    #print('MSE:', error_data[-1])
+    print('MSE:', error_data[-1])
     print('Time:', time.time() - time_init)
     # print('Bench:', bench_max)
     # print('Std:', std_total)
