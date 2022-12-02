@@ -312,7 +312,7 @@ class PSOEnvironment(gym.Env):
         #                                                                                             self.X_test,
         #                                                                                             self.seed, self.vehicles).create_new_map()
         self.bench_function, self.bench_array, self.num_of_peaks, self.index_a = Benchmark_function(self.grid_or, 1, self.xs, self.ys, None, self.seed, 0,
-                                                                 base_benchmark="himmelblau", randomize_shekel=True).create_new_map()
+                                                                 base_benchmark="shekel", randomize_shekel=True).create_new_map()
 
         self.max_contamination()
         self.generatePart()
@@ -1310,11 +1310,11 @@ class PSOEnvironment(gym.Env):
             self.type_error = 'action_zone'
             self.calculate_error()
             print("MSE az:", self.dict_error)
-            # self.type_error = 'peaks'
-            # self.calculate_error()
-            # print("Error peak:", self.dict_error_peak)
-            #self.type_error = 'all_map'
-            #self.calculate_error()
+            self.type_error = 'peaks'
+            self.calculate_error()
+            print("Error peak:", self.dict_error_peak)
+            self.type_error = 'all_map'
+            self.calculate_error()
         return self.state, reward, done, {}
 
     def final_gaussian(self):

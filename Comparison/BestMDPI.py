@@ -49,7 +49,7 @@ df_bounds: data of the limits of the surface where the drone can travel
 
 #action = np.array([3.6845, 1.5614, 0, 3.1262]) # Syracuse (Exploitation)
 #action = np.array([2.0187, 0, 3.2697, 0]) #Rome (Exploration)
-action = np.array([2, 2, 0, 0])
+action = np.array([0, 0, 0, 3])
 
 initial_position = np.array([[0, 0],
                              [8, 56],
@@ -66,8 +66,8 @@ start_time = time.time()
 
 # PSO initialization
 vehicles = 4
-stage = 'exploration'
-#stage = 'no_exploitation'
+#stage = 'exploration'
+stage = 'no_exploitation'
 method = 0
 pso = PSOEnvironment(resolution, ys, method, initial_seed=1000000, initial_position=initial_position, vehicles=vehicles,
                      exploration_distance=100, exploitation_distance=200, reward_function='inc_mse',
@@ -107,7 +107,7 @@ for i in range(10):
     #plot.gaussian(mu, sigma, part_ant)
     #plot.movement_exploration(mu, sigma, part_ant_explore)
     #plot.movement_exploration(final_mu, final_sigma, part_ant)
-    # plot.benchmark()
+    #plot.benchmark()
     #plot.detection_areas(mu, sigma)
     #plot.mean_map(mu, sigma)
     #plot.mu_exploitation(dict_mu, dict_sigma, centers)
