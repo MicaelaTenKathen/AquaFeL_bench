@@ -67,7 +67,7 @@ vehicles = 4
 #stage = 'exploration'
 stage = 'no_exploitation'
 method = 0
-pso = PSOEnvironment(resolution, ys, method, initial_seed=1000009, initial_position=initial_position, vehicles=vehicles,
+pso = PSOEnvironment(resolution, ys, method, initial_seed=1000000, initial_position=initial_position, vehicles=vehicles,
                      exploration_distance=100, exploitation_distance=200, reward_function='inc_mse',
                      type_error='all_map', stage=stage, final_model='federated')
 # Gaussian process initialization
@@ -80,7 +80,7 @@ mse_vec = []
 epsilon = 0
 delta_epsilon = 0
 
-for i in range(1):
+for i in range(10):
 
     done = False
     state = pso.reset()
@@ -118,11 +118,11 @@ for i in range(1):
     #print('Time', time.time() - start_time)
 
     #plt.plot(epsilon_array)
-    MSE_data = np.array(pso.error_value())
+    # MSE_data = np.array(pso.error_value())
     #plt.grid()
     #plt.show()
     print('GT:', i)
-    print('MSE:', MSE_data[-1])
+    # print('MSE:', MSE_data[-1])
 
 X_test, secure, bench_function, grid_min, sigma, mu, MSE_data, it, part_ant, y_data, grid, bench_max, dict_mu, \
 dict_sigma, centers, part_ant_exploit, dict_centers, assig_center, part_ant_explore, final_mu, final_sigma, dict_limits = pso.data_out()
@@ -131,13 +131,15 @@ centers_bench, dict_limits_bench, dict_coord = pso.return_bench()
 # plot.gaussian(mu, sigma, part_ant)
 # plot.movement_exploration(mu, sigma, part_ant_explore)
 # plot.movement_exploration(final_mu, final_sigma, part_ant)
-plot.benchmark()
-plot.detection_areas(mu, sigma)
+# plot.benchmark()
+# plot.detection_areas(mu, sigma)
 # plot.mu_exploitation(dict_mu, dict_sigma, centers)
 # distances = pso.distances_data()
 # plot.movement_exploitation(vehicles, dict_mu, dict_sigma, centers, dict_centers, part_ant_exploit, assig_center)
-plot.plot_classic(mu, sigma, part_ant)
+# plot.plot_classic(mu, sigma, part_ant)
 # plot.zoom_action_zone(centers_bench, dict_limits_bench, mu, sigma, final_mu, final_sigma)
 # print(centers_bench, dict_limits_bench, dict_coord)
 #pso.save_excel()
+pso.print_error()
+
 

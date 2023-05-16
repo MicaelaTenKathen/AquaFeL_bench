@@ -10,3 +10,4 @@ bayesian-optimization~=1.2.0
 scipy~=1.5.4
 scikit-optimize~=0.8.1
 gym~=0.20.0
+statsmodels~=0.14.0

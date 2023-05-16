@@ -1,9 +1,9 @@
 import openpyxl
 
-from Data.limits import Limits
+from Data.limitsn import Limits
 from Environment.map import Map
 from Benchmark.benchmark_functions import Benchmark_function
-from Environment.bounds import Bounds
+from Environment.boundsn import Bounds
 from Data.utils import Utils
 from Environment.contamination_areas import DetectContaminationAreas
 from Environment.plot import Plots
@@ -13,10 +13,12 @@ from sklearn.gaussian_process.kernels import RBF
 from sklearn.metrics import mean_squared_error
 
 import numpy as np
+import pandas as pd
 import random
 import math
 import gym
 import copy
+
 
 class LawnmoverEnvironment():
 
@@ -25,6 +27,9 @@ class LawnmoverEnvironment():
         self.exploration_distance = exploration_distance
         self.file = 'Test/Elsevier/Lawnmower'
         self.type_error = type_error
+        self.error_peak = list()
+        self.action_mse = list()
+        self.map_mse = list()
         self.initial_type_error = type_error
         self.xs = int(10000 / (15000 / ys))
         self.ys = ys
@@ -34,16 +39,24 @@ class LawnmoverEnvironment():
         self.grid_or = Map(self.xs, ys).black_white()
 
         self.grid_min, self.grid_max, self.grid_max_x, self.grid_max_y = 0, self.ys, self.xs, self.ys
-        self.df_bounds, self.X_test, self.bench_limits = Bounds(self.resolution, self.xs, self.ys, load_file=False).map_bound()
-        self.secure, self.df_bounds = Bounds(self.resolution, self.xs, self.ys).interest_area()
+        self.tim = 0
+        if self.tim == 0:
+            self.df_bounds, self.X_test_no, self.bench_limits_no = Bounds(self.resolution, self.xs, self.ys,
+                                                                          load_file=False).map_bound()
+            self.X_test, self.bench_limits = Bounds(self.resolution, self.xs, self.ys,
+                                                    load_file=False).available_xtest()
+            # = Bounds(self.resolution, self.xs, self.ys,
+            #                                                    load_file=False).available_xtest()
+            self.tim = 1
+        self.secure = Bounds(self.resolution, self.xs, self.ys).interest_area()
         self.df_bounds_x = Bounds(self.resolution, self.xs, self.ys).bounds_y()
         self.vehicles = vehicles
         self.util = Utils(self.vehicles)
         self.seed = initial_seed
         self.initial_seed = initial_seed
         self.initial_position = initial_position
-        self.vel = [2, 2]
-        self.limits = Limits(self.secure, self.xs, self.ys)
+        self.vel = [10, 10]
+        self.limits = Limits(self.secure, self.xs, self.ys, self.vehicles)
         self.dict_direction = {}
         self.dict_turn = {}
         self.asv = 1
@@ -95,7 +108,7 @@ class LawnmoverEnvironment():
                                                      area=self.xs)
         self.centers_bench, self.dict_index_bench, self.dict_bench, self.dict_coord_bench, self.center_peaks_bench, \
         self.max_bench_list, self.dict_limits_bench, self.action_zone_bench, self.dict_impo_bench, \
-        self.index_center_bench = self.detect_areas.benmchark_areas()
+        self.index_center_bench = self.detect_areas.benchmark_areas()
         self.reset_variables()
         self.first_values()
 
@@ -138,51 +151,123 @@ class LawnmoverEnvironment():
         self.save_dist = [25, 50, 75, 100, 125, 150, 175, 200, 225, 250, 275, 300, 325, 350, 375, 400, 425, 450, 475,
                           500, 525, 550, 575, 600, 625, 650, 675, 700]
 
+    # def moving_direction(self):
+    #     for i in range(self.vehicles):
+    #         if i % 2 == 0:
+    #             if (self.bench_limits[1] - self.initial_position[i, 0]) < (
+    #                     self.initial_position[i, 0] - self.bench_limits[0]):
+    #                 self.dict_direction["vehicle%s" % i] = [-1, 0]
+    #             else:
+    #                 self.dict_direction["vehicle%s" % i] = [1, 0]
+    #         else:
+    #             if (self.bench_limits[3] - self.initial_position[i, 1]) < (
+    #                     self.initial_position[i, 1] - self.bench_limits[2]):
+    #                 self.dict_direction["vehicle%s" % i] = [0, -1]
+    #             else:
+    #                 self.dict_direction["vehicle%s" % i] = [0, 1]
+    #
+    # def moving_turn(self, i, dfirst):
+    #     if dfirst:
+    #         self.dict_check_turn["vehicle%s" % i] = False
+    #         if i % 2 == 0:
+    #             x_turn = self.dict_direction["vehicle%s" % i][0]
+    #             if (self.bench_limits[3] - self.initial_position[i, 1]) < (
+    #                     self.initial_position[i, 1] - self.bench_limits[2]):
+    #                 self.dict_turn["vehicle%s" % i] = [x_turn, -1]
+    #             else:
+    #                 self.dict_turn["vehicle%s" % i] = [x_turn, 1]
+    #         else:
+    #             y_turn = self.dict_direction["vehicle%s" % i][1]
+    #             if (self.bench_limits[1] - self.initial_position[i, 0]) < (
+    #                     self.initial_position[i, 0] - self.bench_limits[0]):
+    #                 self.dict_turn["vehicle%s" % i] = [-1, y_turn]
+    #             else:
+    #                 self.dict_turn["vehicle%s" % i] = [1, y_turn]
+    #     else:
+    #         self.dict_check_turn["vehicle%s" % i] = True
+    #
+    # def move_vehicle(self, c_pos, vehicle):
+    #     direction = self.dict_direction["vehicle%s" % vehicle]
+    #     n_pos = list(map(lambda x, y, z: x + y * z, c_pos, direction, self.vel))
+    #     self.check = self.limits.check_lm_limits(n_pos, vehicle)
+    #     if not self.check:
+    #         n_pos = list(map(lambda x, y, z: x * y + z, self.dict_turn["vehicle%s" % vehicle], self.vel,
+    #                          c_pos))
+    #         self.dict_direction["vehicle%s" % vehicle] = list(
+    #             map(lambda x, y: x * y, self.dict_direction["vehicle%s" % vehicle], [-1, -1]))
+    #         self.moving_turn(vehicle, dfirst=False)
+    #
+    #     return n_pos
+
     def moving_direction(self):
         for i in range(self.vehicles):
-            if i % 2 == 0:
-                if (self.bench_limits[1] - self.initial_position[i, 0]) < (
-                        self.initial_position[i, 0] - self.bench_limits[0]):
-                    self.dict_direction["vehicle%s" % i] = [-1, 0]
-                else:
-                    self.dict_direction["vehicle%s" % i] = [1, 0]
+            # if i % 2 == 0:
+            if (self.bench_limits_no[1] - self.initial_position[i, 0]) <= (
+                    self.initial_position[i, 0] - self.bench_limits_no[0]):
+                self.dict_direction["vehicle%s" % i] = [-1, 0]
             else:
-                if (self.bench_limits[3] - self.initial_position[i, 1]) < (
-                        self.initial_position[i, 1] - self.bench_limits[2]):
-                    self.dict_direction["vehicle%s" % i] = [0, -1]
-                else:
-                    self.dict_direction["vehicle%s" % i] = [0, 1]
+                self.dict_direction["vehicle%s" % i] = [1, 0]
+            # else:
+            #     if (self.bench_limits[3] - self.initial_position[i, 1]) <= (
+            #             self.initial_position[i, 1] - self.bench_limits[2]):
+            #         self.dict_direction["vehicle%s" % i] = [0, -1]
+            #     else:
+            #         self.dict_direction["vehicle%s" % i] = [0, 1]
 
-    def moving_turn(self, i, dfirst):
+    def moving_turn(self, i, dfirst=False):
         if dfirst:
             self.dict_check_turn["vehicle%s" % i] = False
-            if i % 2 == 0:
-                x_turn = self.dict_direction["vehicle%s" % i][0]
-                if (self.bench_limits[3] - self.initial_position[i, 1]) < (
-                        self.initial_position[i, 1] - self.bench_limits[2]):
-                    self.dict_turn["vehicle%s" % i] = [x_turn, -1]
-                else:
-                    self.dict_turn["vehicle%s" % i] = [x_turn, 1]
+            # if i % 2 == 0:
+            x_turn = self.dict_direction["vehicle%s" % i][0]
+            if (self.bench_limits_no[3] - self.initial_position[i, 1]) <= (
+                    self.initial_position[i, 1] - self.bench_limits_no[2]):
+                self.dict_turn["vehicle%s" % i] = [0, -1]
             else:
-                y_turn = self.dict_direction["vehicle%s" % i][1]
-                if (self.bench_limits[1] - self.initial_position[i, 0]) < (
-                        self.initial_position[i, 0] - self.bench_limits[0]):
-                    self.dict_turn["vehicle%s" % i] = [-1, y_turn]
-                else:
-                    self.dict_turn["vehicle%s" % i] = [1, y_turn]
+                self.dict_turn["vehicle%s" % i] = [0, 1]
+            # else:
+            #     y_turn = self.dict_direction["vehicle%s" % i][1]
+            #     if (self.bench_limits[1] - self.initial_position[i, 0]) <= (
+            #             self.initial_position[i, 0] - self.bench_limits[0]):
+            #         self.dict_turn["vehicle%s" % i] = [-1, 0]
+            #     else:
+            #         self.dict_turn["vehicle%s" % i] = [1, 0]
         else:
             self.dict_check_turn["vehicle%s" % i] = True
 
     def move_vehicle(self, c_pos, vehicle):
-        direction = self.dict_direction["vehicle%s" % vehicle]
-        n_pos = list(map(lambda x, y, z: x + y * z, c_pos, direction, self.vel))
+        direction = copy.copy(self.dict_direction["vehicle%s" % vehicle])
+        n_pos = copy.copy(list(map(lambda x, y, z: x + y * z, c_pos, direction, self.vel)))
         self.check = self.limits.check_lm_limits(n_pos, vehicle)
         if not self.check:
-            n_pos = list(map(lambda x, y, z: x * y + z, self.dict_turn["vehicle%s" % vehicle], self.vel,
-                             c_pos))
-            self.dict_direction["vehicle%s" % vehicle] = list(map(lambda x, y: x * y, self.dict_direction["vehicle%s" % vehicle], [-1, -1]))
-            self.moving_turn(vehicle, dfirst=False)
-
+            n_pos = copy.copy(list(map(lambda x, y, z: x * y + z, self.dict_turn["vehicle%s" % vehicle], self.vel,
+                             c_pos)))
+            self.dict_direction["vehicle%s" % vehicle] = copy.copy(list(
+                map(lambda x, y: x * y, self.dict_direction["vehicle%s" % vehicle], [-1, -1])))
+            self.moving_turn(vehicle, dfirst=True)
+            self.check2 = self.limits.check_lm_limits(n_pos, vehicle)
+            if not self.check2:
+                n_pos = copy.copy(list(map(lambda w, x, y, z: (w + x) * y + z, self.dict_turn["vehicle%s" % vehicle], self.dict_direction["vehicle%s" % vehicle], self.vel,
+                                           c_pos)))
+            # for i, subfleet in enumerate(self.sub_fleets):
+            #     sensors = self.s_sf[i]
+            #     for s, sensor in enumerate(sensors):
+            #         bench = copy.copy(self.dict_benchs_[sensor]['map_created'])
+            #         self.plot.benchmark(bench, sensor)
+            #         mu = copy.copy(self.dict_sensors_[sensor]['mu']['data'])
+            #         sigma = copy.copy(self.dict_sensors_[sensor]['sigma']['data'])
+            #         vehicles = copy.copy(self.dict_sensors_[sensor]['vehicles'])
+            #         trajectory = list()
+            #         first = True
+            #         list_ind = list()
+            #         for veh in vehicles:
+            #             list_ind.append(self.P.nodes[veh]['index'])
+            #             if first:
+            #                 trajectory = np.array(self.P.nodes[veh]['U_p'])
+            #                 first = False
+            #             else:
+            #                 new = np.array(self.P.nodes[veh]['U_p'])
+            #                 trajectory = np.concatenate((trajectory, new), axis=1)
+            #         self.plot.plot_classic(mu, sigma, trajectory, sensor, list_ind)
         return n_pos
 
     def take_sample(self, n_pos):
@@ -232,10 +317,15 @@ class LawnmoverEnvironment():
         if self.type_error == 'all_map':
             self.error = mean_squared_error(y_true=self.bench_array, y_pred=self.mu)
         elif self.type_error == 'peaks':
+            peaks_error = []
             for i in range(len(self.index_center_bench)):
                 max_az = self.mu[self.index_center_bench[i]]
                 self.dict_error_peak["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                peaks_error.append(abs(self.max_bench_list[i] - max_az))
+                # self.error_peak.append(abs(self.max_bench_list[i] - max_az))
+            self.error_peak.append(np.mean(np.array(peaks_error)))
         elif self.type_error == 'action_zone':
+            action_mse = []
             estimated_all = list()
             for i in range(len(self.center_peaks_bench)):
                 bench_action = copy.copy(self.dict_bench["action_zone%s" % i])
@@ -247,7 +337,10 @@ class LawnmoverEnvironment():
                     estimated_all.append(self.mu[index_action[j]])
                 error_action = mean_squared_error(y_true=bench_action, y_pred=estimated_action)
                 self.dict_error["action_zone%s" % i] = copy.copy(error_action)
-            self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
+                action_mse.append(error_action)
+                # self.action_mse.append(error_action)
+            self.action_mse.append(np.mean(np.array(action_mse)))
+            # self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
         return self.error
 
     def save_data(self):
@@ -280,7 +373,7 @@ class LawnmoverEnvironment():
             self.moving_turn(i, dfirst=True)
             self.dict_c_pos["vehicle%s" % i] = list(self.initial_position[i])
             sample_value = self.take_sample(self.dict_c_pos["vehicle%s" % i])
-            n_pos = self.move_vehicle(self.dict_c_pos["vehicle%s" % i], i)
+            n_pos = self.dict_c_pos["vehicle%s" % i]
             self.dict_n_pos["vehicle%s" % i] = n_pos
             self.part_ant, self.distances = self.util.distance_part(self.g, self.n_data, n_pos, self.part_ant,
                                                                     self.distances, self.array_part, dfirst=True)
@@ -296,8 +389,6 @@ class LawnmoverEnvironment():
             if self.n_data > self.vehicles - 1:
                 self.n_data = 0
 
-        self.error = self.calculate_error()
-        self.error_data.append(self.error)
         self.it.append(self.g)
 
         self.k = self.vehicles
@@ -336,7 +427,6 @@ class LawnmoverEnvironment():
                     n_pos = self.dict_n_pos["vehicle%s" % i]
                     sample_value = self.take_sample(n_pos)
                     self.check_duplicate(n_pos, sample_value)
-
                     self.post_array = self.gp_regression()
 
                     self.samples += 1
@@ -346,10 +436,8 @@ class LawnmoverEnvironment():
                         self.n_data = 0
 
                 self.it.append(self.g)
-                self.error = self.calculate_error()
-                self.error_data.append(self.error)
 
-                #self.save_data()
+                # self.save_data()
 
                 self.ok = False
 
@@ -369,6 +457,7 @@ class LawnmoverEnvironment():
             print("Error peak:", self.dict_error_peak)
             self.type_error = 'all_map'
             self.calculate_error()
+            self.map_mse.append(self.error)
         else:
             done = False
         return done
@@ -387,3 +476,15 @@ class LawnmoverEnvironment():
 
     def return_bench(self):
         return self.centers_bench, self.dict_limits_bench, self.center_peaks_bench
+
+    def print_error(self):
+        print("Error peak:", np.mean(np.array(self.error_peak)), '+-', np.std(np.array(self.error_peak)) * 1.96)
+        print("MSE action:", np.mean(np.array(self.action_mse)), '+-', np.std(np.array(self.action_mse)) * 1.96)
+        print("MSE map:", np.mean(np.array(self.map_mse)), '+-', np.std(np.array(self.map_mse)) * 1.96)
+        df1 = pd.DataFrame(self.error_peak)
+        df1.to_excel('../Test/Results/Error/ErrorLawnmower.xlsx')
+        df2 = pd.DataFrame(self.action_mse)
+        df2.to_excel('../Test/Results/MSEAZ/MSEAZLawnmower.xlsx')
+        df3 = pd.DataFrame(self.map_mse)
+        df3.to_excel('../Test/Results/MSEM/MSEMLawnmower.xlsx')
+

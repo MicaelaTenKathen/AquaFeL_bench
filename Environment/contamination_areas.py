@@ -5,6 +5,10 @@ import copy
 
 class DetectContaminationAreas():
     def __init__(self, X_test, benchmark, vehicles=4, area=100):
+        """X_test: available points on the lake map, points where ASVs may travel (black part of the map), (x, y)
+           benchmark: vector containing the ground truth value of the X_test coordinates, benchmark[i]=f(X_test(i))
+           vehicles: number of vehicles in the fleet
+           area: map width"""
         self.coord = copy.copy(X_test)
         self.coord_bench = copy.copy(X_test)
         self.coord_real = copy.copy(X_test)
@@ -221,5 +225,13 @@ class DetectContaminationAreas():
             dict_impor_bench["action_zone%s" % j] = list_impo
             impo -= 10
             j += 1
+            """Key variables:
+            dict_bench_: dictionary containing the gt values of the coordinates of the action zone [i].
+            action_zone_bench: gt values in the coordinates of the action zones. The values of the action zones are 
+            together (values of zone 1, values of zone 2, ...) (append function).
+            dict_index_bench: dictionary containing the indexes of the coordinates found in the action zone [i]
+            max_bench_list: list of the peak values of the action zones, position [i] peak of action zone [i]
+            index_center_bench: indexes of contamination peaks in the action zones, position [i] peak of action zone [i]
+            """
         return j, dict_index_bench, dict_bench_, dict_coord_bench, center_peaks_bench, max_bench_list, \
                dict_limits_bench, action_zone_bench, dict_impor_bench, index_center_bench

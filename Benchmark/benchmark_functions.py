@@ -4,6 +4,7 @@ author: Federico Peralta
 repository: https://github.com/FedePeralta/BO_drones/blob/master/bin/Utils/utils.py#L45
 """
 
+import copy
 import numpy as np
 from deap import benchmarks
 from skopt.benchmarks import branin as brn
@@ -177,6 +178,13 @@ class Benchmark_function():
         map_min = np.min(map_created1)
         map_created = list(map(lambda x: (x - map_min)/(map_max - map_min), map_created1))
         map_created = np.array(map_created)
+        print(map_created.shape)
+        new = copy.copy(map_created)
+        new[self.grid == 0] = np.nan
+        new = np.rot90(new)
+        print(np.array(new).shape)
+        with open(f'../Benchmark/numpy_files_mj/old_random_{str(self.seed - 1000001)}.npy', 'wb') as g:
+            np.save(g, new)
         #print(map_created)
 
         #fig = plt.figure()

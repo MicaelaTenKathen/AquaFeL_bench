@@ -1,6 +1,7 @@
 from PIL import Image
 import numpy as np
 from Data.data_path import map_path_classic, map_path
+import matplotlib.image
 
 
 class Map():
@@ -33,6 +34,8 @@ class Map():
                 array[i, j] = int(bit)
                 i += 1
             j += 1
+
+        matplotlib.image.imsave("../Image/map_mj.png", array.T)
 
         return array
 

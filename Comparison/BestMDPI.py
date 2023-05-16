@@ -47,9 +47,9 @@ df_bounds: data of the limits of the surface where the drone can travel
 # Variables initialization
 
 
-#action = np.array([3.6845, 1.5614, 0, 3.1262]) # Syracuse (Exploitation)
-#action = np.array([2.0187, 0, 3.2697, 0]) #Rome (Exploration)
-action = np.array([0, 0, 0, 3])
+# action = np.array([3.6845, 1.5614, 0, 3.1262]) # Syracuse (Exploitation)
+# action = np.array([2.0187, 0, 3.2697, 0]) #Rome (Exploration)
+action = np.array([2, 2, 0, 0])
 
 initial_position = np.array([[0, 0],
                              [8, 56],
@@ -66,7 +66,7 @@ start_time = time.time()
 
 # PSO initialization
 vehicles = 4
-#stage = 'exploration'
+# stage = 'exploration'
 stage = 'no_exploitation'
 method = 0
 pso = PSOEnvironment(resolution, ys, method, initial_seed=1000000, initial_position=initial_position, vehicles=vehicles,
@@ -94,12 +94,12 @@ for i in range(10):
     while not done:
         state, reward, done, dic = pso.step(action)
 
-        R_vec.append(-reward)
+        # R_vec.append(-reward)
 
-        error_data = np.array(pso.error_value())
-        error_actual = error_data[n:]
-        mean_error.append(np.mean(error_actual))
-        n = error_data.shape[0] - 1
+        # error_data = np.array(pso.error_value())
+        # error_actual = error_data[n:]
+        # mean_error.append(np.mean(error_actual))
+        # n = error_data.shape[0] - 1
     X_test, secure, bench_function, grid_min, sigma, mu, MSE_data, it, part_ant, y_data, grid, bench_max, dict_mu, \
     dict_sigma, centers, part_ant_exploit, dict_centers, assig_center, part_ant_explore, final_mu, final_sigma, dict_limits = pso.data_out()
     plot = Plots(xs, ys, X_test, secure, bench_function, grid_min, grid, stage)
@@ -107,7 +107,7 @@ for i in range(10):
     #plot.gaussian(mu, sigma, part_ant)
     #plot.movement_exploration(mu, sigma, part_ant_explore)
     #plot.movement_exploration(final_mu, final_sigma, part_ant)
-    #plot.benchmark()
+    # plot.benchmark()
     #plot.detection_areas(mu, sigma)
     #plot.mean_map(mu, sigma)
     #plot.mu_exploitation(dict_mu, dict_sigma, centers)
@@ -135,7 +135,7 @@ for i in range(10):
     # std_total = np.std(np.array(last_mse))
     # conf_total = std_total * 1.96
     print('GT:', i)
-    print('MSE:', error_data[-1])
+    # print('MSE:', error_data[-1])
     print('Time:', time.time() - time_init)
     # print('Bench:', bench_max)
     # print('Std:', std_total)
@@ -151,3 +151,4 @@ for i in range(10):
 
 #pso.save_excel()
 # plot.error(error_data, it)
+pso.print_error()

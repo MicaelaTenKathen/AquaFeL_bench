@@ -2,8 +2,8 @@ import openpyxl
 
 from Data.limits import Limits
 from Environment.map import Map
-# from Benchmark.benchmark_functions import Benchmark_function
-from Benchmark.bench_functions import *
+from Benchmark.benchmark_functions import Benchmark_function
+# from Benchmark.bench_functions import *
 from Environment.bounds import Bounds
 from Data.utils import Utils
 from Environment.contamination_areas import DetectContaminationAreas
@@ -14,6 +14,7 @@ from sklearn.gaussian_process.kernels import RBF
 from sklearn.metrics import mean_squared_error
 
 import numpy as np
+import pandas as pd
 import random
 import math
 import gym
@@ -22,6 +23,9 @@ import copy
 from deap import base
 from deap import creator
 from deap import tools
+from statistics import mean
+import matplotlib.pyplot as plt
+
 from deap.benchmarks import movingpeaks, shekel
 
 
@@ -49,6 +53,10 @@ class PSOEnvironment(gym.Env):
                  exploitation_distance=200, reward_function='mse', behavioral_method=0, type_error='all_map',
                  stage='exploration', final_model='samples'):
         self.type_error = type_error
+        self.error_peak = list()
+        self.mean_un = []
+        self.action_mse = list()
+        self.map_mse = list()
         self.final_model = final_model
         self.initial_stage = stage
         self.exploration_distance_initial = exploration_distance
@@ -99,7 +107,7 @@ class PSOEnvironment(gym.Env):
         self.ys = ys
         self.max_peaks_bench = list()
         self.max_peaks_mu = list()
-        ker = RBF(length_scale=10, length_scale_bounds=(1e-1, 10^5))
+        ker = RBF(length_scale=10, length_scale_bounds=(1e-1, 10))
         self.gpr = GaussianProcessRegressor(kernel=ker, alpha=1e-6)  # optimizer=None)
         self.x_h = []
         self.y_h = []
@@ -306,13 +314,13 @@ class PSOEnvironment(gym.Env):
         Initialization of the pso.
         """
         self.reset_variables()
-        # self.bench_function, self.bench_array, self.num_of_peaks, self.index_a = Benchmark_function(self.grid_or,
-        #                                                                                             self.resolution,
-        #                                                                                             self.xs, self.ys,
-        #                                                                                             self.X_test,
-        #                                                                                             self.seed, self.vehicles).create_new_map()
-        self.bench_function, self.bench_array, self.num_of_peaks, self.index_a = Benchmark_function(self.grid_or, 1, self.xs, self.ys, None, self.seed, 0,
-                                                                 base_benchmark="shekel", randomize_shekel=True).create_new_map()
+        self.bench_function, self.bench_array, self.num_of_peaks, self.index_a = Benchmark_function(self.grid_or,
+                                                                                                    self.resolution,
+                                                                                                    self.xs, self.ys,
+                                                                                                    self.X_test,
+                                                                                                    self.seed, self.vehicles).create_new_map()
+        # self.bench_function, self.bench_array, self.num_of_peaks, self.index_a = Benchmark_function(self.grid_or, 1, self.xs, self.ys, None, self.seed, 0,
+        #                                                          base_benchmark="shekel", randomize_shekel=True).create_new_map()
 
         self.max_contamination()
         self.generatePart()
@@ -320,7 +328,7 @@ class PSOEnvironment(gym.Env):
         random.seed(self.seed)
         self.swarm()
         self.statistic()
-        #self.peaks_bench()
+        self.peaks_bench()
         self.detect_areas = DetectContaminationAreas(self.X_test, self.bench_array, vehicles=self.vehicles,
                                                      area=self.xs)
         self.centers_bench, self.dict_index_bench, self.dict_bench, self.dict_coord_bench, self.center_peaks_bench, \
@@ -676,8 +684,6 @@ class PSOEnvironment(gym.Env):
             if self.n_data > self.vehicles - 1:
                 self.n_data = 0
 
-        self.error = self.calculate_error()
-        self.error_data.append(self.error)
         self.it.append(self.g)
 
         self.sigma_best, self.mu_best = self.sigma_max()
@@ -732,28 +738,32 @@ class PSOEnvironment(gym.Env):
                     self.replace_action_zones()
                 self.error = mean_squared_error(y_true=self.bench_array, y_pred=self.final_mu)
         elif self.type_error == 'peaks':
+            peaks_error = []
             if dfirts and self.stage != 'no_exploitation':
                 for i in range(len(self.index_center_bench)):
                     max_az = self.final_mu[self.index_center_bench[i]]
-                #for i in range(len(self.center_peaks_bench)):
-                 #   coord = self.center_peaks_bench[i]
-                  #  for j in range(len(self.X_test)):
-                   #     coord_xtest = self.X_test[j]
-                    #    if coord[0] == coord_xtest[0] and coord[1] == coord_xtest[1]:
-                     #       max_az = self.mu[j]
-                      #      break
-                    self.dict_error_peak_explore["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                for i in range(len(self.center_peaks_bench)):
+                   coord = self.center_peaks_bench[i]
+                   for j in range(len(self.X_test)):
+                       coord_xtest = self.X_test[j]
+                       if coord[0] == coord_xtest[0] and coord[1] == coord_xtest[1]:
+                           max_az = self.mu[j]
+                           break
+                   self.dict_error_peak_explore["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                   peaks_error.append(abs(self.max_bench_list[i] - max_az))
             elif self.stage == 'no_exploitation':
                 for i in range(len(self.index_center_bench)):
                     max_az = self.mu[self.index_center_bench[i]]
-                #for i in range(len(self.center_peaks_bench)):
-                 #   coord = self.center_peaks_bench[i]
-                  #  for j in range(len(self.X_test)):
-                   #     coord_xtest = self.X_test[j]
-                    #    if coord[0] == coord_xtest[0] and coord[1] == coord_xtest[1]:
-                     #       max_az = self.mu[j]
-                      #      break
-                    self.dict_error_peak["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                for i in range(len(self.center_peaks_bench)):
+                   coord = self.center_peaks_bench[i]
+                   for j in range(len(self.X_test)):
+                       coord_xtest = self.X_test[j]
+                       if coord[0] == coord_xtest[0] and coord[1] == coord_xtest[1]:
+                           max_az = self.mu[j]
+                           break
+                   self.dict_error_peak["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                   peaks_error.append(abs(self.max_bench_list[i] - max_az))
+                   # self.error_peak.append(abs(self.max_bench_list[i] - max_az))
             else:
                 if self.final_model == 'centralized':
                     self.final_mu = copy.copy(self.mu)
@@ -762,14 +772,17 @@ class PSOEnvironment(gym.Env):
                     self.replace_action_zones()
                 for i in range(len(self.index_center_bench)):
                     max_az = self.final_mu[self.index_center_bench[i]]
-                #for i in range(len(self.center_peaks_bench)):
-                 #   coord = self.center_peaks_bench[i]
-                  #  for j in range(len(self.X_test)):
-                   #     coord_xtest = self.X_test[j]
-                    #    if coord[0] == coord_xtest[0] and coord[1] == coord_xtest[1]:
-                     #       max_az = self.final_mu[j]
-                      #      break
-                    self.dict_error_peak["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                for i in range(len(self.center_peaks_bench)):
+                   coord = self.center_peaks_bench[i]
+                   for j in range(len(self.X_test)):
+                       coord_xtest = self.X_test[j]
+                       if coord[0] == coord_xtest[0] and coord[1] == coord_xtest[1]:
+                           max_az = self.final_mu[j]
+                           break
+                   self.dict_error_peak["action_zone%s" % i] = abs(self.max_bench_list[i] - max_az)
+                   peaks_error.append(abs(self.max_bench_list[i] - max_az))
+                   # self.error_peak.append(abs(self.max_bench_list[i] - max_az))
+            self.error_peak.append(np.mean(np.array(peaks_error)))
         elif self.type_error == 'contamination_1':
             index_mu_max = [i for i in range(len(self.X_test)) if (self.X_test[i] == self.coordinate_bench_max).all()]
             index_mu_max = index_mu_max[0]
@@ -780,6 +793,7 @@ class PSOEnvironment(gym.Env):
             self.peaks_mu()
             self.error = mean_squared_error(y_true=self.max_peaks_bench, y_pred=self.max_peaks_mu)
         elif self.type_error == 'action_zone':
+            action_mse_ = []
             if dfirts and self.stage != 'no_exploitation':
                 estimated_all = list()
                 for i in range(len(self.center_peaks_bench)):
@@ -791,7 +805,7 @@ class PSOEnvironment(gym.Env):
                         estimated_all.append(self.mu[index_action[j]])
                     error_action = mean_squared_error(y_true=bench_action, y_pred=estimated_action)
                     self.dict_error_explore["action_zone%s" % i] = copy.copy(error_action)
-                self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
+                    action_mse_.append(error_action)
             elif self.stage == 'no_exploitation':
                 estimated_all = list()
                 for i in range(len(self.center_peaks_bench)):
@@ -804,7 +818,10 @@ class PSOEnvironment(gym.Env):
                         estimated_all.append(self.mu[index_action[j]])
                     error_action = mean_squared_error(y_true=bench_action, y_pred=estimated_action)
                     self.dict_error["action_zone%s" % i] = copy.copy(error_action)
-                self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
+                    action_mse_.append(error_action)
+                    # self.action_mse.append(error_action)
+                # self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
+                # self.action_mse.append(mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all))
             else:
                 if self.final_model == 'centralized':
                     self.final_mu = copy.copy(self.mu)
@@ -821,7 +838,11 @@ class PSOEnvironment(gym.Env):
                         estimated_all.append(self.final_mu[index_action[j]])
                     error_action = mean_squared_error(y_true=bench_action, y_pred=estimated_action)
                     self.dict_error["action_zone%s" % i] = copy.copy(error_action)
-                self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
+                    action_mse_.append(error_action)
+                    # self.action_mse.append(error_action)
+                # self.error = mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all)
+                # self.action_mse.append(mean_squared_error(y_true=self.action_zone_bench, y_pred=estimated_all))
+            self.action_mse.append(np.mean(np.array(action_mse_)))
         return self.error
 
     def allocate_vehicles(self):
@@ -941,8 +962,6 @@ class PSOEnvironment(gym.Env):
 
 
                 self.it.append(self.g)
-                self.error = self.calculate_error()
-                self.error_data.append(self.error)
 
                 #self.save_data()
 
@@ -980,6 +999,7 @@ class PSOEnvironment(gym.Env):
                 self.part_ant_explore = copy.copy(self.part_ant)
                 self.allocate_vehicles()
                 self.obtain_global()
+                self.mean_un.append(mean(self.sigma))
                 for part in self.pop:
                     self.part_ant_exploit, self.distances_exploit = self.util.distance_part(self.g_exploit, self.n_data, part,
                                                                                             self.part_ant_exploit,
@@ -1092,8 +1112,6 @@ class PSOEnvironment(gym.Env):
                         self.samples += 1
 
                 self.it.append(self.g)
-                self.error = self.calculate_error(dfirts=False)
-                self.error_data.append(self.error)
 
                 #self.save_data()
 
@@ -1209,8 +1227,6 @@ class PSOEnvironment(gym.Env):
                     if self.n_data > self.vehicles - 1:
                         self.n_data = 0
 
-                self.error = self.calculate_error()
-                self.error_data.append(self.error)
                 self.it.append(self.g)
 
                 self.ok = False
@@ -1306,7 +1322,8 @@ class PSOEnvironment(gym.Env):
                 elif self.final_model == 'federated':
                     self.replace_action_zones()
             # self.plot.action_areas(self.dict_coord_, self.dict_impo_, self.centers)
-            #self.plot.action_areas(self.dict_coord_bench, self.dict_impo_bench, self.centers_bench)
+            # self.plot.action_areas(self.dict_coord_bench, self.dict_impo_bench, self.centers_bench)
+            # plt.show(block=True)
             self.type_error = 'action_zone'
             self.calculate_error()
             print("MSE az:", self.dict_error)
@@ -1315,6 +1332,7 @@ class PSOEnvironment(gym.Env):
             print("Error peak:", self.dict_error_peak)
             self.type_error = 'all_map'
             self.calculate_error()
+            self.map_mse.append(self.error)
         return self.state, reward, done, {}
 
     def final_gaussian(self):
@@ -1391,6 +1409,21 @@ class PSOEnvironment(gym.Env):
 
     def return_bench(self):
         return self.centers_bench, self.dict_limits_bench, self.center_peaks_bench
+
+    def print_error(self):
+        print("Error peak:", np.mean(np.array(self.error_peak)), '+-', np.std(np.array(self.error_peak)) * 1.96)
+        print("MSE action:", np.mean(np.array(self.action_mse)), '+-', np.std(np.array(self.action_mse)) * 1.96)
+        print("MSE map:", np.mean(np.array(self.map_mse)), '+-', np.std(np.array(self.map_mse)) * 1.96)
+        df1 = pd.DataFrame(self.error_peak)
+        df1.to_excel('../Test/Results/Error/ErrorClassic.xlsx')
+        df2 = pd.DataFrame(self.action_mse)
+        df2.to_excel('../Test/Results/MSEAZ/MSEAZClassic.xlsx')
+        df3 = pd.DataFrame(self.map_mse)
+        df3.to_excel('../Test/Results/MSEM/MSEMClassic.xlsx')
+        fig1, ax1 = plt.subplots()
+        ax1.set_title('Mean Uncertainty')
+        ax1.boxplot(self.mean_un, notch=True)
+
 
     def return_seed(self):
         return self.seed
