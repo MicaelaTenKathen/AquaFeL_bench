@@ -113,7 +113,7 @@ for i in range(10):
     #plot.mu_exploitation(dict_mu, dict_sigma, centers)
     #distances = pso.distances_data()
     #plot.movement_exploitation(vehicles, dict_mu, dict_sigma, centers, dict_centers, part_ant_exploit, assig_center)
-    # plot.plot_classic(final_mu, final_sigma, part_ant)
+    plot.plot_classic(final_mu, final_sigma, part_ant)
     #plot.zoom_action_zone(centers_bench, dict_limits_bench, mu, sigma, final_mu, final_sigma)
     #print(centers_bench, dict_limits_bench, dict_coord)
 

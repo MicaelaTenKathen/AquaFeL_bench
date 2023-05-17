@@ -35,7 +35,7 @@ def error_plot():
     my_dict_error = {'Lawnmower': lawn,
                      'Random Waypoints': way,
                      'Random Grip Path': grid,
-                     'BO': bo,
+                     'BO for M-ASVs': bo,
                      'Classic PSO': cpso,
                      'EGPSO Exploration': explore,
                      'EGPSO Exploitation': exploit,
@@ -77,7 +77,7 @@ def mseaz_plot():
     my_dict_mseaz = {'Lawnmower': lawn,
                      'Random Waypoints': way,
                      'Random Grip Path': grid,
-                     'BO': bo,
+                     'BO for M-ASVs': bo,
                      'Classic PSO': cpso,
                      'EGPSO Exploration': explore,
                      'EGPSO Exploitation': exploit,
@@ -97,7 +97,7 @@ def msem_plot():
     grid = pd.read_excel('../Test/Results/MSEM/MSEMGridPath.xlsx')
     grid = grid.to_numpy()
     grid = grid[:, 1]
-    bo = pd.read_excel('../Test/Results/MSEAZ/MSEMBO.xlsx')
+    bo = pd.read_excel('../Test/Results/MSEM/MSEMBO.xlsx')
     bo = bo.to_numpy()
     bo = bo[:, 1]
     cpso = pd.read_excel('../Test/Results/MSEM/MSEMClassic.xlsx')
@@ -119,7 +119,7 @@ def msem_plot():
     my_dict_msem = {'Lawnmower': lawn,
                      'Random Waypoints': way,
                      'Random Grip Path': grid,
-                     'BO': bo,
+                     'BO for M-ASVs': bo,
                      'Classic PSO': cpso,
                      'EGPSO Exploration': explore,
                      'EGPSO Exploitation': exploit,
