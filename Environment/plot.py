@@ -8,6 +8,7 @@ from Environment.map import Map
 from matplotlib.colors import LinearSegmentedColormap
 from matplotlib.patches import Rectangle
 import copy
+import matplotlib.animation as animation
 
 
 class Plots():
@@ -133,6 +134,7 @@ class Plots():
     def benchmark(self):
         plot_bench = np.copy(self.bench_function)
         plot_bench[self.grid_or == 0] = np.nan
+        plot_bench[self.grid_or != 0] = 1
         levels = np.arange(0, 1, 0.2)
         extent = (0, self.xs, 0, self.ys)
         fig = plt.figure()
@@ -216,7 +218,7 @@ class Plots():
             final_x = part_ant_exploit[-1, x]
             initial_y = part_ant_exploit[0, y]
             final_y = part_ant_exploit[-1, y]
-            axs = fig.add_subplot(rows, cols, position[j])
+            axs = fig.add_subplot(rows, cols, position[zone])
             self.plot_trajectory_classic(axs, part_ant_exploit[:, x], part_ant_exploit[:, y], colormap=self.colors[j])
             axs.plot(initial_x, initial_y, 'x', color='black', markersize=4, label='Exploitation initial position')
             axs.plot(final_x, final_y, 'X', color='red', markersize=3, label='Exploitation final position')
@@ -225,7 +227,7 @@ class Plots():
                             vmax=1.0)
             axs.set_xlabel("x [m]")
             axs.set_ylabel("y [m]")
-            axs.set_title("Vehicle %s" % str(j + 1))
+            axs.set_title("Action Zone %s" % str(zone))
             axs.set_yticks([0, 20, 40, 60, 80, 100, 120, 140])
             axs.set_xticks([0, 50, 100])
             axs.set_aspect('equal')
@@ -316,11 +318,11 @@ class Plots():
                 final_y.append(part_ant[-1, i])
         vehicles = int(part_ant.shape[1] / 2)
         # print(vehicles)
-        for i in range(vehicles):
-            self.plot_trajectory_classic(axs[0], part_ant[:, 2 * i], part_ant[:, 2 * i + 1], colormap=self.colors[i])
-        axs[0].plot(initial_x, initial_y, 'o', color='black', markersize=3, label='ASVs initial positions')
-        axs[0].plot(final_x, final_y, 'x', color='red', markersize=4, label='ASVs exploration final positions')
-        axs[0].legend(loc=3, fontsize=6)
+        # for i in range(vehicles):
+        #     self.plot_trajectory_classic(axs[0], part_ant[:, 2 * i], part_ant[:, 2 * i + 1], colormap=self.colors[i])
+        # axs[0].plot(initial_x, initial_y, 'o', color='black', markersize=3, label='ASVs initial positions')
+        # axs[0].plot(final_x, final_y, 'x', color='red', markersize=4, label='ASVs exploration final positions')
+        # axs[0].legend(loc=3, fontsize=6)
 
         im2 = axs[0].imshow(Z_var.T, interpolation='bilinear', origin='lower', cmap="gist_yarg", vmin=0, vmax=1.0)
         plt.colorbar(im2, ax=axs[0], label='σ', shrink=1.0)
@@ -352,9 +354,58 @@ class Plots():
         ticks_y = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
         axs[1].yaxis.set_major_formatter(ticks_y)
 
-        plt.savefig("../Image/Contamination/GT3/Tabla_3.png")
+        # plt.savefig("../Image/Contamination/GT3/Tabla_3.png")
         plt.show()
 
+    def movement_exploration_(self, mu, sigma, x_h, y_h):
+        Z_var, Z_mean = self.Z_var_mean(mu, sigma)
+        fig = plt.figure()
+        axs = fig.add_subplot()
+
+        initial_x = list()
+        initial_y = list()
+        final_x = list()
+        final_y = list()
+        # print(vehicles)
+        # for i in range(vehicles):
+        #     self.plot_trajectory_classic(axs, part_ant[:, 2 * i], part_ant[:, 2 * i + 1], colormap=self.colors[i])
+        for i in range(len(x_h)):
+            axs.plot(x_h[i], y_h[i], 'x', color='red', markersize=3)
+        # axs.plot(final_x, final_y, 'x', color='red', markersize=4, label='ASVs exploration final positions')
+        # axs.legend(loc=3, fontsize=6)
+
+        im2 = axs.imshow(Z_mean.T, interpolation='bilinear', origin='lower', cmap=self.cmapmean, vmin=0, vmax=1.0)
+        plt.colorbar(im2, ax=axs, label='µ', shrink=1)
+        axs.set_xlabel("x [m]")
+        axs.set_ylabel("y [m]")
+        axs.set_yticks([0, 20, 40, 60, 80, 100, 120, 140])
+        axs.set_xticks([0, 50, 100])
+        axs.set_aspect('equal')
+        axs.set_ylim([self.ys, 0])
+        axs.grid(True)
+        ticks_x = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+        axs.xaxis.set_major_formatter(ticks_x)
+
+        ticks_y = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+        axs.yaxis.set_major_formatter(ticks_y)
+
+        # im3 = axs[1].imshow(Z_mean.T, interpolation='bilinear', origin='lower', cmap=self.cmapmean, vmin=0, vmax=1.0)
+        # plt.colorbar(im3, ax=axs[1], label='µ', shrink=1.0)
+        # axs[1].set_xlabel("x [m]")
+        # axs[1].set_ylabel("y [m]")
+        # axs[1].set_yticks([0, 20, 40, 60, 80, 100, 120, 140])
+        # axs[1].set_xticks([0, 50, 100])
+        # axs[1].set_ylim([self.ys, 0])
+        # axs[1].set_aspect('equal')
+        # axs[1].grid(True)
+        # ticks_x = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+        # axs[1].xaxis.set_major_formatter(ticks_x)
+        #
+        # ticks_y = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+        # axs[1].yaxis.set_major_formatter(ticks_y)
+
+        plt.savefig("../Image/Contamination/GT3/Tabla_3.png")
+        plt.show()
     @staticmethod
     def error(MSE_data, it):
         plt.figure()

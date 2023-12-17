@@ -37,8 +37,8 @@ def error_plot():
                      'Random Grip Path': grid,
                      'BO for M-ASVs': bo,
                      'Classic PSO': cpso,
-                     'EGPSO Exploration': explore,
-                     'EGPSO Exploitation': exploit,
+                     'Aqua-PSO Exploration': explore,
+                     'Aqua-PSO Exploitation': exploit,
                      'Epsilon Greedy': epsilon,
                      'AquaFeL-PSO': aqua}
 
@@ -79,8 +79,8 @@ def mseaz_plot():
                      'Random Grip Path': grid,
                      'BO for M-ASVs': bo,
                      'Classic PSO': cpso,
-                     'EGPSO Exploration': explore,
-                     'EGPSO Exploitation': exploit,
+                     'Aqua-PSO Exploration': explore,
+                     'Aqua-PSO Exploitation': exploit,
                      'Epsilon Greedy': epsilon,
                      'AquaFeL-PSO': aqua}
 
@@ -121,8 +121,8 @@ def msem_plot():
                      'Random Grip Path': grid,
                      'BO for M-ASVs': bo,
                      'Classic PSO': cpso,
-                     'EGPSO Exploration': explore,
-                     'EGPSO Exploitation': exploit,
+                     'Aqua-PSO Exploration': explore,
+                     'Aqua-PSO Exploitation': exploit,
                      'Epsilon Greedy': epsilon,
                      'AquaFeL-PSO': aqua}
 

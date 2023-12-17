@@ -67,8 +67,8 @@ vehicles = 4
 #stage = 'exploration'
 stage = 'no_exploitation'
 method = 0
-pso = PSOEnvironment(resolution, ys, method, initial_seed=1000000, initial_position=initial_position, vehicles=vehicles,
-                     exploration_distance=100, exploitation_distance=200, reward_function='inc_mse',
+pso = PSOEnvironment(resolution, ys, method, initial_seed=1000009, initial_position=initial_position, vehicles=vehicles,
+                     exploration_distance=200, exploitation_distance=200, reward_function='inc_mse',
                      type_error='all_map', stage=stage, final_model='federated')
 # Gaussian process initialization
 
@@ -80,12 +80,12 @@ mse_vec = []
 epsilon = 0
 delta_epsilon = 0
 
-for i in range(10):
+for i in range(1):
 
     done = False
     state = pso.reset()
     R_vec = []
-    delta_epsilon = 0.13
+    delta_epsilon = 0.18
     epsilon_array = []
 
     # Main part of the code
@@ -94,9 +94,9 @@ for i in range(10):
         seed_epsilon += 1
         distances_array = pso.distances_data()
         distances = np.max(distances_array)
-        if distances <= 65:
+        if distances <= 50:
             epsilon = 0.95
-        elif distances >= 135:
+        elif distances >= 100:
             epsilon = 0.05
         else:
             epsilon = epsilon_ant - delta_epsilon

@@ -70,7 +70,7 @@ lwm = LawnmoverEnvironment(ys, resolution, vehicles=vehicles, initial_seed=10000
 error_vec = []
 last_error = []
 
-for i in range(10):
+for i in range(1):
     time_init = time.time()
     done = False
     lwm.reset()

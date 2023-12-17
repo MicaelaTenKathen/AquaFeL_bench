@@ -24,7 +24,11 @@ from deap import base
 from deap import creator
 from deap import tools
 from statistics import mean
+from IPython import display
 import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import matplotlib.ticker as ticker
+
 
 from deap.benchmarks import movingpeaks, shekel
 
@@ -88,6 +92,7 @@ class PSOEnvironment(gym.Env):
         self.dict_global_best = {}
         self.dict_error = {}
         self.dict_centers = {}
+        self.ims = []
         self.dict_error_comparison = {}
         self.dict_limits = {}
         self.coord_centers = []
@@ -99,7 +104,7 @@ class PSOEnvironment(gym.Env):
         self.population = vehicles
         self.resolution = resolution
         self.smin = 0
-        self.smax = 3
+        self.smax = 2
         self.size = 2
         self.wmin = 0.4 / (15000 / ys)
         self.wmax = 0.9 / (15000 / ys)
@@ -124,6 +129,8 @@ class PSOEnvironment(gym.Env):
         self.samples = None
         self.dist_ant = None
         self.sigma_best = []
+        self.fig, self.axs = plt.subplots()
+        self.init_fig = True
         self.mu_best = []
         self.action_zone = list()
         self.action_zone_index = list()
@@ -146,7 +153,7 @@ class PSOEnvironment(gym.Env):
         self.post_array = np.ones((1, self.vehicles))
         self.distances = np.zeros(self.vehicles)
         self.distances_exploit = np.zeros(self.vehicles)
-        self.lam = 0.375
+        self.lam = 0.3
         self.part_ant = np.zeros((1, self.vehicles * 2))
         self.part_ant_exploit = copy.copy(self.part_ant)
         self.part_ant_explore = copy.copy(self.part_ant)
@@ -200,6 +207,12 @@ class PSOEnvironment(gym.Env):
         self.plot = Plots(self.xs, self.ys, self.X_test, self.secure, self.bench_function, self.grid_min, self.grid_or, self.stage)
 
         self.util = Utils(self.vehicles)
+
+        cols = round(self.vehicles / 2)
+        rows = self.vehicles // cols
+        rows += self.vehicles % cols
+        position = range(1, self.vehicles + 1)
+
 
         # self.mpb = movingpeaks.MovingPeaks(dim=2, npeaks=4, lambda_=0.6,
         #                                    min_height=0,
@@ -1299,22 +1312,220 @@ class PSOEnvironment(gym.Env):
 
     def step(self, action):
         if self.stage == "exploration":
+            ya = False
             action = np.array([2.0187, 0, 3.2697, 0])
             self.state, reward, done, dic = self.step_stage_exploration(action)
             if (self.distances >= self.exploration_distance).any() or np.max(self.distances) == self.dist_pre:
                 self.stage = "exploitation"
         elif self.stage == "exploitation":
             action = np.array([3.6845, 1.5614, 0, 3.1262])
+            ya = True
             if self.final_model == 'federated':
                 self.state, reward, done, dic = self.step_stage_exploitation_federated(action)
             elif self.final_model == 'centralized':
                 self.state, reward, done, dic = self.step_stage_exploitation_centralized(action)
+            # if self.init_fig:
+            #     self.fig = plt.figure(figsize=(8, 8))
+            #
+            # dict_matrix_mu = {}
+            # dict_matrix_sigma = {}
+            # for i in range(len(self.dict_centers)):
+            #     dict_matrix_sigma["action_zone%s" % i], dict_matrix_mu["action_zone%s" % i] = self.plot.Z_var_mean(
+            #         self.dict_mu["action_zone%s" % i], self.dict_sigma["action_zone%s" % i])
+            # for j in range(len(self.assig_centers)):
+            #     x = 2 * j
+            #     y = 2 * j + 1
+            #     zone = int(self.assig_centers[j])
+            #     cols = round(self.vehicles / 2)
+            #     rows = self.vehicles // cols
+            #     rows += self.vehicles % cols
+            #     position = range(1, self.vehicles + 1)
+            #     initial_x = self.part_ant_exploit[0, x]
+            #     final_x = self.part_ant_exploit[-1, x]
+            #     initial_y = self.part_ant_exploit[0, y]
+            #     final_y = self.part_ant_exploit[-1, y]
+            #
+            #     self.axs = self.fig.add_subplot(rows, cols, position[zone])
+            #     if self.init_fig:
+            #         cols = round(self.vehicles / 2)
+            #         rows = self.vehicles // cols
+            #         rows += self.vehicles % cols
+            #         position = range(1, self.vehicles + 1)
+            #
+            #
+            #         # self.axs.plot(initial_x, initial_y, 'x', color='black', markersize=4,
+            #         #               label='Exploitation initial position')
+            #
+            #         # self.axs.legend(loc=3, fontsize=6)
+            #
+            #         self.axs.set_xlabel("x [m]")
+            #         self.axs.set_ylabel("y [m]")
+            #         self.axs.set_title("Action Zone %s" % str(zone))
+            #         self.axs.set_yticks([0, 20, 40, 60, 80, 100, 120, 140])
+            #         self.axs.set_xticks([0, 50, 100])
+            #         self.axs.set_aspect('equal')
+            #         self.axs.set_ylim([self.ys, 0])
+            #         self.axs.grid(True)
+            #         ticks_x = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+            #         self.axs.xaxis.set_major_formatter(ticks_x)
+            #
+            #         ticks_y = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+            #         self.axs.yaxis.set_major_formatter(ticks_y)
+            #         bottom, top = 0.1, 1.5
+            #         left, right = 0.1, 2
+            #     # self.axs.plot(final_x, final_y, 'X', color='red', markersize=3, label='Exploitation final position')
+            #     # self.plot.plot_trajectory_classic(self.axs, self.part_ant_exploit[:, x], self.part_ant_exploit[:, y],
+            #     #                              colormap=self.plot.colors[j])
+            #     matrix_sigma = copy.copy(dict_matrix_sigma["action_zone%s" % zone])
+            #     matrix_mu = copy.copy(dict_matrix_mu["action_zone%s" % zone])
+            #     # im = self.axs.imshow(matrix_sigma.T, interpolation='bilinear', origin='lower', cmap="gist_yarg", vmin=0,
+            #     #                  vmax=1.0)
+            #     im = self.axs.imshow(matrix_mu.T, interpolation='bilinear', origin='lower', cmap=self.plot.cmapmean, vmin=0,
+            #                     vmax=1.0)
+            #
+            # if self.init_fig:
+            #
+            #
+            #     self.fig.subplots_adjust(top=top, bottom=bottom, left=left, right=right, hspace=0.15, wspace=0.25)
+            #     cbar_ax = self.fig.add_axes([0.85, bottom, 0.025, 0.85])
+            #     # self.fig.colorbar(im, cax=cbar_ax, label='σ', shrink=1.0)
+            #     self.fig.colorbar(im, cax=cbar_ax, label='µ', shrink=1.0)
+            #
+            #     plt.tight_layout()
+            #     self.init_fig = False
+            #     plt.pause(6)
+            # else:
+            #     plt.pause(0.5)
+            #
+            # plt.show()
         elif self.stage == "no_exploitation":
             action = action
             self.exploration_distance = self.exploitation_distance
             self.state, reward, done, dic = self.step_stage_exploration(action)
             if (self.distances >= self.exploration_distance).any() or np.max(self.distances) == self.dist_pre:
                 done = True
+            # self.final_gaussian()
+            # self.plot.movement_exploration_(self.final_mu, self.final_sigma, self.x_h, self.y_h)
+
+            # Z_var, Z_mean = self.plot.Z_var_mean(self.final_mu, self.final_sigma)
+            # initial_x = list()
+            # initial_y = list()
+            # final_x = list()
+            # final_y = list()
+            # for i in range(self.part_ant.shape[1]):
+            #     if i % 2 == 0:
+            #         initial_x.append(self.part_ant[0, i])
+            #         final_x.append(self.part_ant[-1, i])
+            #     else:
+            #         initial_y.append(self.part_ant[0, i])
+            #         final_y.append(self.part_ant[-1, i])
+            # vehicles = int(self.part_ant.shape[1] / 2)
+            # # print(vehicles)
+            # for i in range(vehicles):
+            #     self.plot.plot_trajectory_classic(self.axs, self.part_ant[:, 2 * i], self.part_ant[:, 2 * i + 1],
+            #                                  colormap=self.plot.colors[i])
+            # if self.init_fig:
+            #     self.axs.plot(initial_x, initial_y, 'o', color='black', markersize=3, label='ASVs initial positions')
+            #     # self.axs.plot(final_x, final_y, 'x', color='red', markersize=4,
+            #     #               label='ASVs exploration final positions')
+            #     self.axs.legend(loc=3, fontsize=6)
+            # # else:
+            #     # self.axs.plot(final_x, final_y, 'x', color='red', markersize=4)
+            #
+            # im2 = self.axs.imshow(Z_var.T, interpolation='bilinear', origin='lower', cmap="gist_yarg", vmin=0, vmax=1.0)
+            # # im3 = self.axs.imshow(Z_mean.T, interpolation='bilinear', origin='lower', cmap=self.plot.cmapmean, vmin=0,
+            # #                     vmax=1.0)
+            # if self.init_fig:
+            #     plt.colorbar(im2, ax=self.axs, label='σ', shrink=1.0)
+            #     # plt.colorbar(im3, ax=self.axs, label='µ', shrink=1.0)
+            #     self.axs.set_xlabel("x [m]")
+            #     self.axs.set_ylabel("y [m]")
+            #     self.axs.set_yticks([0, 20, 40, 60, 80, 100, 120, 140])
+            #     self.axs.set_xticks([0, 50, 100])
+            #     self.axs.set_aspect('equal')
+            #     self.axs.set_ylim([self.ys, 0])
+            #     self.axs.grid(True)
+            #     self.init_fig = False
+            #     ticks_x = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+            #     self.axs.xaxis.set_major_formatter(ticks_x)
+            #
+            #     ticks_y = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+            #     self.axs.yaxis.set_major_formatter(ticks_y)
+            #     plt.pause(6)
+            # else:
+            #     plt.pause(0.5)
+            # plt.show()
+            # self.ims.append([im2])
+        final = False
+        if self.stage == "exploration" or not ya:
+            self.final_gaussian()
+            final =True
+        elif self.stage == "exploitation" and ya:
+            self.replace_action_zones()
+        Z_var, Z_mean = self.plot.Z_var_mean(self.final_mu, self.final_sigma)
+        initial_x = list()
+        initial_y = list()
+        final_x = list()
+        final_y = list()
+        for i in range(self.part_ant.shape[1]):
+            if i % 2 == 0:
+                initial_x.append(self.part_ant[0, i])
+                final_x.append(self.part_ant[-1, i])
+            else:
+                initial_y.append(self.part_ant[0, i])
+                final_y.append(self.part_ant[-1, i])
+        vehicles = int(self.part_ant.shape[1] / 2)
+        # print(vehicles)
+        for i in range(vehicles):
+            self.plot.plot_trajectory_classic(self.axs, self.part_ant[:, 2 * i], self.part_ant[:, 2 * i + 1],
+                                         colormap=self.plot.colors[i])
+        if self.init_fig:
+            self.axs.plot(initial_x, initial_y, 'o', color='black', markersize=3, label='ASVs explore')
+            # self.axs.plot(final_x, final_y, 'x', color='red', markersize=4,
+            #               label='ASVs exploration final positions')
+            self.axs.legend(loc=3, fontsize=6)
+        # else:
+            # self.axs.plot(final_x, final_y, 'x', color='red', markersize=4)
+        if final and self.stage == "exploitation":
+            initial_x = list()
+            initial_y = list()
+            for i in range(self.part_ant.shape[1]):
+                if i % 2 == 0:
+                    initial_x.append(self.part_ant_exploit[0, i])
+                    final_x.append(self.part_ant[-1, i])
+                else:
+                    initial_y.append(self.part_ant_exploit[0, i])
+                    final_y.append(self.part_ant[-1, i])
+            self.axs.plot(initial_x, initial_y, 'o', color='red', markersize=3, label='ASVs exploit')
+            # self.axs.plot(final_x, final_y, 'x', color='red', markersize=4,
+            #               label='ASVs exploration final positions')
+            self.axs.legend(loc=3, fontsize=6)
+            final = False
+
+        im2 = self.axs.imshow(Z_var.T, interpolation='bilinear', origin='lower', cmap="gist_yarg", vmin=0, vmax=1.0)
+        # im3 = self.axs.imshow(Z_mean.T, interpolation='bilinear', origin='lower', cmap=self.plot.cmapmean, vmin=0,
+        #                       vmax=1.0)
+        if self.init_fig:
+            plt.colorbar(im2, ax=self.axs, label='σ', shrink=1.0)
+            # plt.colorbar(im3, ax=self.axs, label='µ', shrink=1.0)
+            self.axs.set_xlabel("x [m]")
+            self.axs.set_ylabel("y [m]")
+            self.axs.set_yticks([0, 20, 40, 60, 80, 100, 120, 140])
+            self.axs.set_xticks([0, 50, 100])
+            self.axs.set_aspect('equal')
+            self.axs.set_ylim([self.ys, 0])
+            self.axs.grid(True)
+            self.init_fig = False
+            ticks_x = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+            self.axs.xaxis.set_major_formatter(ticks_x)
+
+            ticks_y = ticker.FuncFormatter(lambda x, pos: format(int(x * 100), ','))
+            self.axs.yaxis.set_major_formatter(ticks_y)
+            plt.pause(6)
+        else:
+            plt.pause(0.5)
+        plt.show()
+
         if done and not self.fail:
             if self.stage != 'no_exploitation':
                 if self.final_model == 'centralized':
@@ -1323,7 +1534,20 @@ class PSOEnvironment(gym.Env):
                     self.replace_action_zones()
             # self.plot.action_areas(self.dict_coord_, self.dict_impo_, self.centers)
             # self.plot.action_areas(self.dict_coord_bench, self.dict_impo_bench, self.centers_bench)
-            # plt.show(block=True)
+            # ker = RBF(length_scale=10, length_scale_bounds=(10, 10.1))
+            # self.gpr = GaussianProcessRegressor(kernel=ker, alpha=1e-6)  # optimizer=None)
+            # self.final_gaussian()
+            # self.plot.movement_exploration(self.mu, self.sigma, self.part_ant_explore)
+            # ker = RBF(length_scale=5, length_scale_bounds=(5, 5.1))
+            # self.gpr = GaussianProcessRegressor(kernel=ker, alpha=1e-6)  # optimizer=None)
+            # self.final_gaussian()
+            # ani = animation.ArtistAnimation(fig, self.ims, interval=50, blit=True,
+            #                                 repeat_delay=1000)
+            # writer = animation.FFMpegWriter(
+            #         fps=15, metadata=dict(artist='Me'), bitrate=1800)
+            # ani.save("movie.mp4", writer=writer)
+            # self.plot.movement_exploitation(self.vehicles, self.dict_mu, self.dict_sigma, self.centers, self.dict_centers, self.part_ant_exploit,
+            #                            self.assig_centers)
             self.type_error = 'action_zone'
             self.calculate_error()
             print("MSE az:", self.dict_error)
@@ -1415,11 +1639,11 @@ class PSOEnvironment(gym.Env):
         print("MSE action:", np.mean(np.array(self.action_mse)), '+-', np.std(np.array(self.action_mse)) * 1.96)
         print("MSE map:", np.mean(np.array(self.map_mse)), '+-', np.std(np.array(self.map_mse)) * 1.96)
         df1 = pd.DataFrame(self.error_peak)
-        df1.to_excel('../Test/Results/Error/ErrorClassic.xlsx')
+        df1.to_excel('../Test/Results/Error/ErrorEpsilon.xlsx')
         df2 = pd.DataFrame(self.action_mse)
-        df2.to_excel('../Test/Results/MSEAZ/MSEAZClassic.xlsx')
+        df2.to_excel('../Test/Results/MSEAZ/MSEAZEpsilon.xlsx')
         df3 = pd.DataFrame(self.map_mse)
-        df3.to_excel('../Test/Results/MSEM/MSEMClassic.xlsx')
+        df3.to_excel('../Test/Results/MSEM/MSEMEpsilon.xlsx')
         fig1, ax1 = plt.subplots()
         ax1.set_title('Mean Uncertainty')
         ax1.boxplot(self.mean_un, notch=True)
